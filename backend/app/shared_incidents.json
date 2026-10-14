@@ -33,11 +33,42 @@
         "resource_id": "resource-4fca3ca6",
         "details": {}
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm exposure",
+          "action": "Check the bucket ACL/policy and whether sensitive objects are exposed.",
+          "command": "aws s3api get-bucket-acl --bucket <BUCKET>",
+          "done": false
+        },
+        {
+          "title": "Block public access",
+          "action": "Enable all four S3 Block Public Access settings.",
+          "command": "aws s3api put-public-access-block --bucket <BUCKET> --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true",
+          "done": false
+        },
+        {
+          "title": "Review access logs",
+          "action": "Search CloudTrail/S3 access logs for downloads by unknown IPs.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Document & prevent",
+          "action": "Record findings; enable account-level Block Public Access.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Investigating",
+          "timestamp": "2026-10-07T03:47:34.092245+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-06T18:47:07.827685+00:00",
       "updated_at": "2026-10-07T03:47:34.092245+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-49C72BAB",
@@ -79,11 +110,42 @@
           ]
         }
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm the rule",
+          "action": "Inspect the security group's inbound rules.",
+          "command": "aws ec2 describe-security-groups --group-ids <SG_ID>",
+          "done": false
+        },
+        {
+          "title": "Remove the open rule",
+          "action": "Revoke the 0.0.0.0/0 SSH ingress rule.",
+          "command": "aws ec2 revoke-security-group-ingress --group-id <SG_ID> --protocol tcp --port 22 --cidr 0.0.0.0/0",
+          "done": false
+        },
+        {
+          "title": "Check instances",
+          "action": "Review auth logs on instances using this group for suspicious logins.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Restrict access",
+          "action": "Allow SSH only from a trusted IP/VPN, or switch to SSM Session Manager.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-07T03:12:23.586314+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-07T03:12:23.586308+00:00",
       "updated_at": "2026-10-07T03:12:23.586314+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-910DAA46",
@@ -115,11 +177,42 @@
         "resource_id": "resource-85d96450",
         "details": {}
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Identify the change",
+          "action": "Find who attached/created the policy and why.",
+          "command": "aws iam list-attached-user-policies --user-name <USER>",
+          "done": false
+        },
+        {
+          "title": "Remove excessive permissions",
+          "action": "Detach the admin/wildcard policy.",
+          "command": "aws iam detach-user-policy --user-name <USER> --policy-arn <POLICY_ARN>",
+          "done": false
+        },
+        {
+          "title": "Review activity",
+          "action": "Check CloudTrail for actions by this principal since the change.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Apply least privilege",
+          "action": "Replace with a scoped policy; rotate access keys if misuse is suspected.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-06T18:47:07.827721+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-06T18:47:07.827720+00:00",
       "updated_at": "2026-10-06T18:47:07.827721+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-EBC46850",
@@ -161,11 +254,42 @@
           ]
         }
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm the rule",
+          "action": "Inspect the security group's inbound rules.",
+          "command": "aws ec2 describe-security-groups --group-ids <SG_ID>",
+          "done": false
+        },
+        {
+          "title": "Remove the open rule",
+          "action": "Revoke the 0.0.0.0/0 SSH ingress rule.",
+          "command": "aws ec2 revoke-security-group-ingress --group-id <SG_ID> --protocol tcp --port 22 --cidr 0.0.0.0/0",
+          "done": false
+        },
+        {
+          "title": "Check instances",
+          "action": "Review auth logs on instances using this group for suspicious logins.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Restrict access",
+          "action": "Allow SSH only from a trusted IP/VPN, or switch to SSM Session Manager.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-06T18:47:07.827812+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-06T18:47:07.827811+00:00",
       "updated_at": "2026-10-06T18:47:07.827812+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-7747B599",
@@ -197,11 +321,42 @@
         "resource_id": "resource-26cf7754",
         "details": {}
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Identify the change",
+          "action": "Find who attached/created the policy and why.",
+          "command": "aws iam list-attached-user-policies --user-name <USER>",
+          "done": false
+        },
+        {
+          "title": "Remove excessive permissions",
+          "action": "Detach the admin/wildcard policy.",
+          "command": "aws iam detach-user-policy --user-name <USER> --policy-arn <POLICY_ARN>",
+          "done": false
+        },
+        {
+          "title": "Review activity",
+          "action": "Check CloudTrail for actions by this principal since the change.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Apply least privilege",
+          "action": "Replace with a scoped policy; rotate access keys if misuse is suspected.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-06T18:47:07.827781+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-06T18:47:07.827779+00:00",
       "updated_at": "2026-10-06T18:47:07.827781+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-04566877",
@@ -242,11 +397,42 @@
           ]
         }
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm the rule",
+          "action": "Inspect the security group's inbound rules.",
+          "command": "aws ec2 describe-security-groups --group-ids <SG_ID>",
+          "done": false
+        },
+        {
+          "title": "Remove the open rule",
+          "action": "Revoke the 0.0.0.0/0 SSH ingress rule.",
+          "command": "aws ec2 revoke-security-group-ingress --group-id <SG_ID> --protocol tcp --port 22 --cidr 0.0.0.0/0",
+          "done": false
+        },
+        {
+          "title": "Check instances",
+          "action": "Review auth logs on instances using this group for suspicious logins.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Restrict access",
+          "action": "Allow SSH only from a trusted IP/VPN, or switch to SSM Session Manager.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-07T03:12:23.592707+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-07T03:12:23.592701+00:00",
       "updated_at": "2026-10-07T03:12:23.592707+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-E9204D4D",
@@ -287,11 +473,42 @@
           ]
         }
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm the rule",
+          "action": "Inspect the security group's inbound rules.",
+          "command": "aws ec2 describe-security-groups --group-ids <SG_ID>",
+          "done": false
+        },
+        {
+          "title": "Remove the open rule",
+          "action": "Revoke the 0.0.0.0/0 SSH ingress rule.",
+          "command": "aws ec2 revoke-security-group-ingress --group-id <SG_ID> --protocol tcp --port 22 --cidr 0.0.0.0/0",
+          "done": false
+        },
+        {
+          "title": "Check instances",
+          "action": "Review auth logs on instances using this group for suspicious logins.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Restrict access",
+          "action": "Allow SSH only from a trusted IP/VPN, or switch to SSM Session Manager.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-07T03:12:23.596181+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-07T03:12:23.596175+00:00",
       "updated_at": "2026-10-07T03:12:23.596181+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-85F364DC",
@@ -332,11 +549,42 @@
           ]
         }
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm the rule",
+          "action": "Inspect the security group's inbound rules.",
+          "command": "aws ec2 describe-security-groups --group-ids <SG_ID>",
+          "done": false
+        },
+        {
+          "title": "Remove the open rule",
+          "action": "Revoke the 0.0.0.0/0 SSH ingress rule.",
+          "command": "aws ec2 revoke-security-group-ingress --group-id <SG_ID> --protocol tcp --port 22 --cidr 0.0.0.0/0",
+          "done": false
+        },
+        {
+          "title": "Check instances",
+          "action": "Review auth logs on instances using this group for suspicious logins.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Restrict access",
+          "action": "Allow SSH only from a trusted IP/VPN, or switch to SSM Session Manager.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-06T19:00:51.935590+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-06T19:00:51.935580+00:00",
       "updated_at": "2026-10-06T19:00:51.935590+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-A990FA18",
@@ -368,11 +616,42 @@
         "resource_id": "resource-16096982",
         "details": {}
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm exposure",
+          "action": "Check the bucket ACL/policy and whether sensitive objects are exposed.",
+          "command": "aws s3api get-bucket-acl --bucket <BUCKET>",
+          "done": false
+        },
+        {
+          "title": "Block public access",
+          "action": "Enable all four S3 Block Public Access settings.",
+          "command": "aws s3api put-public-access-block --bucket <BUCKET> --public-access-block-configuration BlockPublicAcls=true,IgnorePublicAcls=true,BlockPublicPolicy=true,RestrictPublicBuckets=true",
+          "done": false
+        },
+        {
+          "title": "Review access logs",
+          "action": "Search CloudTrail/S3 access logs for downloads by unknown IPs.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Document & prevent",
+          "action": "Record findings; enable account-level Block Public Access.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-06T18:47:07.827626+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-06T18:47:07.827623+00:00",
       "updated_at": "2026-10-06T18:47:07.827626+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     },
     {
       "incident_id": "INC-08769B0D",
@@ -414,11 +693,42 @@
           ]
         }
       },
-      "playbook": [],
-      "history": [],
+      "playbook": [
+        {
+          "title": "Confirm the rule",
+          "action": "Inspect the security group's inbound rules.",
+          "command": "aws ec2 describe-security-groups --group-ids <SG_ID>",
+          "done": false
+        },
+        {
+          "title": "Remove the open rule",
+          "action": "Revoke the 0.0.0.0/0 SSH ingress rule.",
+          "command": "aws ec2 revoke-security-group-ingress --group-id <SG_ID> --protocol tcp --port 22 --cidr 0.0.0.0/0",
+          "done": false
+        },
+        {
+          "title": "Check instances",
+          "action": "Review auth logs on instances using this group for suspicious logins.",
+          "command": null,
+          "done": false
+        },
+        {
+          "title": "Restrict access",
+          "action": "Allow SSH only from a trusted IP/VPN, or switch to SSM Session Manager.",
+          "command": null,
+          "done": false
+        }
+      ],
+      "history": [
+        {
+          "status": "Detected",
+          "timestamp": "2026-10-06T18:47:07.827880+00:00",
+          "note": "Recorded review baseline"
+        }
+      ],
       "created_at": "2026-10-06T18:47:07.827877+00:00",
       "updated_at": "2026-10-06T18:47:07.827880+00:00",
-      "shared_read_only": true
+      "shared_demo": true
     }
   ]
 }

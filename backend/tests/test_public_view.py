@@ -27,8 +27,8 @@ def test_public_projection_does_not_copy_private_fields():
     assert 'private-' not in json.dumps(shared)
     assert shared['event']['event_id'] == inc.event.event_id
     assert shared['severity_score'] == inc.severity_score
-    assert shared['playbook'] == [] and shared['history'] == []
-    assert shared['shared_read_only'] is True
+    assert len(shared['playbook']) == 4 and shared['history'][0]['note'] == 'Recorded review baseline'
+    assert shared['shared_demo'] is True
 
 
 def test_public_archive_survives_empty_store_and_requires_no_key(monkeypatch):
@@ -64,3 +64,24 @@ def test_public_merge_deduplicates_and_excludes_unverified_records(monkeypatch):
     result = client.get('/public/incidents').json()
     assert len(result) == 11
     assert len({i['event']['event_id'] for i in result}) == 11
+
+
+def test_classroom_workflow_is_interactive_but_private_records_are_unchanged(monkeypatch):
+    monkeypatch.setattr(api, 'public_workflow', InMemoryStore())
+    private = InMemoryStore()
+    monkeypatch.setattr(api, 'store', private)
+    monkeypatch.setenv('RENDER', 'true')
+    monkeypatch.delenv('CLOUD_SECURITY_API_KEY', raising=False)
+    rows = client.get('/public/incidents').json()
+    incident = next(i for i in rows if i['event']['origin']=='aws-cloudtrail')
+    assert len(incident['playbook']) == 4
+    path = '/public/incidents/' + incident['incident_id'] + '/status'
+    result = client.patch(path, json={'status':'Investigating', 'note':'must not publish this private note'})
+    assert result.status_code == 200
+    assert result.json()['status'] == 'Investigating'
+    assert 'private note' not in result.text
+    assert client.patch(path, json={'status':'Resolved'}).status_code == 409
+    assert client.get('/public/incidents/' + incident['incident_id']).json()['status'] == 'Investigating'
+    assert client.post('/public/demo/load').json()['duplicates_skipped'] == 6
+    assert len(client.get('/public/incidents').json()) == 10
+    assert private.list() == []

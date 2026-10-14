@@ -250,3 +250,15 @@ Netlify's current Free plan includes credits, and a published production deploy
 uses 15 credits. Do not publish without approval when the user's instruction is
 to avoid credit consumption. Existing service URLs and Free instance plans should
 remain unchanged. No paid storage, auto-recharge or new resources are necessary.
+
+
+## Interactive classroom demo
+
+The deployed shared build now includes response playbooks, browser checkboxes,
+status progression and additive demo loading. Public status changes use a separate
+in-memory classroom workflow shared by visitors. They never alter private
+incidents or AWS resources. These workflow changes reset when the free backend
+restarts. The 4 real historical records and 6 samples remain in the archive.
+Generic CLI commands retain placeholders because original AWS identifiers remain
+hidden. Commands are manual examples and are never executed by the website.
+The prior read-only restriction is superseded by this classroom demo mode.

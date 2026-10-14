@@ -14,7 +14,7 @@ export default function Playbook({ steps, resource }) {
             <span className="min-w-0">
               <span className={`font-medium ${done[n] ? "line-through mute" : ""}`}>{s.title}</span><br />
               <span className="text-sm mute">{s.action}</span>
-              {s.command && <pre className="p-2 mt-1 overflow-x-auto">{s.command.replace(/<(BUCKET|USER|SG_ID)>/g, resource)}</pre>}
+              {s.command && <pre className="p-2 mt-1 overflow-x-auto">{resource.startsWith("resource-") ? s.command : s.command.replace(/<(BUCKET|USER|SG_ID)>/g, resource)}</pre>}
             </span>
           </label>
         ))}

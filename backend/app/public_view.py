@@ -1,6 +1,7 @@
 """Allowlisted, read-only incident projection for the shareable review dashboard."""
 import hashlib
-from .schemas import Incident
+from .schemas import Incident, IncidentType
+from .playbooks import get_playbook
 
 TITLES = {'open_ssh_security_group': 'SSH open to the world',
           'public_s3_bucket': 'Public S3 access', 'excessive_iam_permission': 'Excessive IAM permissions'}
@@ -42,6 +43,7 @@ def public_incident(incident: Incident):
             'region': event['region'], 'account_id': 'Hidden', 'actor':'Hidden', 'source_ip': None,
             'resource_type': raw['resource_type'], 'resource_id': alias, 'details': details,
         },
-        'playbook': [], 'history': [], 'created_at': raw['created_at'], 'updated_at': raw['updated_at'],
-        'shared_read_only': True,
+        'playbook': [step.model_dump(mode='json') for step in get_playbook(IncidentType(kind))],
+        'history': [{'status':raw['status'], 'timestamp':raw['updated_at'], 'note':'Recorded review baseline'}], 'created_at': raw['created_at'], 'updated_at': raw['updated_at'],
+        'shared_demo': True,
     }

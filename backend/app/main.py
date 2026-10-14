@@ -15,6 +15,8 @@ from .store import InMemoryStore, InvalidTransition
 from .sqlite_store import SQLiteStore
 from .public_view import public_incident
 
+public_workflow = InMemoryStore()
+
 app = FastAPI(title="Multi-Cloud Incident Response API", version="0.2.0")
 
 # Lets the React dev server and deployed Netlify frontend call this API from the browser.
@@ -140,6 +142,16 @@ def shared_incidents():
     for incident in store.list():
         if incident.event.origin in {EventOrigin.AWS_CLOUDTRAIL, EventOrigin.DEMO}:
             records[incident.event.event_id] = public_incident(incident)
+    for item in records.values():
+        item.pop("shared_read_only", None)
+        item["shared_demo"] = True
+        # Public workflow is independent of the private incident database.
+        from .playbooks import get_playbook
+        from .schemas import IncidentType
+        item["playbook"] = [step.model_dump(mode="json") for step in get_playbook(IncidentType(item["type"]))]
+        workflow, _ = public_workflow.add(Incident.model_validate(item))
+        item["status"] = workflow.status.value
+        item["history"] = [entry.model_dump(mode="json") for entry in workflow.history]
     return sorted(records.values(), key=lambda i: (i["severity_score"], i["event"]["event_time"]), reverse=True)
 
 
@@ -149,3 +161,22 @@ def shared_incident_detail(incident_id: str):
         if incident["incident_id"] == incident_id:
             return incident
     raise HTTPException(404, "Incident not found")
+
+
+@app.patch("/public/incidents/{incident_id}/status")
+def update_shared_status(incident_id: str, body: StatusUpdate):
+    shared_incidents()  # Initialize only the published, redacted workflow.
+    try:
+        incident = public_workflow.update_status(incident_id, body.status, "Classroom demo workflow updated")
+    except InvalidTransition as exc:
+        raise HTTPException(409, str(exc))
+    if incident is None:
+        raise HTTPException(404, "Incident not found")
+    return shared_incident_detail(incident_id)
+
+
+@app.post("/public/demo/load")
+def shared_demo_load():
+    # The published classroom baseline already contains all six sample incidents.
+    shared_incidents()
+    return {"events_processed": 7, "incidents_created": 0, "duplicates_skipped": 6, "no_incident": 1}

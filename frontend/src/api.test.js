@@ -36,7 +36,7 @@ test('a wrong key retries at most once', async () => {
   expect(prompt).toHaveBeenCalledTimes(1);
 });
 
-test('shared view reads only the public API and rejects writes without a key prompt', async () => {
+test('classroom view uses public demo routes without an operator prompt', async () => {
   vi.stubEnv('VITE_SHARED_VIEW', 'true');
   const fetch = vi.fn().mockResolvedValue(response(200, [{incident_id:'INC-SHARED'}]));
   vi.stubGlobal('fetch', fetch);
@@ -44,8 +44,11 @@ test('shared view reads only the public API and rejects writes without a key pro
   const api = await import('./api.js');
   expect(await api.getIncidents()).toHaveLength(1);
   expect(fetch.mock.calls[0][0]).toContain('/public/incidents');
-  expect(() => api.loadDemo()).toThrow('read-only');
-  expect(() => api.updateStatus('x', 'Investigating')).toThrow('read-only');
+  await api.loadDemo();
+  expect(fetch.mock.calls[1][0]).toContain('/public/demo/load');
+  await api.updateStatus('x', 'Investigating');
+  expect(fetch.mock.calls[2][0]).toContain('/public/incidents/x/status');
+  expect(() => api.postEvent({})).toThrow('operator access');
   expect(prompt).not.toHaveBeenCalled();
   vi.unstubAllEnvs();
 });

@@ -53,7 +53,7 @@ async function sharedRecords() {
 }
 
 function writable() {
-  if (SHARED_VIEW) throw new Error("This shared dashboard is read-only.");
+  if (SHARED_VIEW) throw new Error("Raw event submission requires operator access.");
 }
 
 export const getIncidents = () => SHARED_VIEW ? sharedRecords() : request("/incidents");
@@ -65,8 +65,7 @@ export const getIncident = async (id) => {
   return incident;
 };
 export const postEvent = (rawEvent) => { writable(); return request("/events", { method: "POST", body: JSON.stringify(rawEvent) }); };
-export const loadDemo = (reset = false) => { writable(); return request(`/demo/load?reset=${reset}`, { method: "POST" }); };
+export const loadDemo = (reset = false) => request(SHARED_VIEW ? "/public/demo/load" : `/demo/load?reset=${reset}`, { method: "POST" });
 export const updateStatus = (id, status, note = "") => {
-  writable();
-  return request(`/incidents/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, note }) });
+  return request(`${SHARED_VIEW ? "/public" : ""}/incidents/${id}/status`, { method: "PATCH", body: JSON.stringify({ status, note }) });
 };
