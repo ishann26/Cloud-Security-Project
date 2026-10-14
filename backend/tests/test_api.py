@@ -196,3 +196,31 @@ def test_cors_disallows_unknown_origin():
         },
     )
     assert response.headers.get("access-control-allow-origin") is None
+
+
+def test_operator_key_protects_data_and_all_mutations(monkeypatch):
+    monkeypatch.setenv('CLOUD_SECURITY_API_KEY', 'test-only-key')
+    headers = {'X-API-Key': 'test-only-key'}
+    for bad_headers in ({}, {'X-API-Key': 'wrong'}):
+        assert client.get('/incidents', headers=bad_headers).status_code == 401
+        assert client.post('/events', json=SAMPLE_EVENTS[0], headers=bad_headers).status_code == 401
+        assert client.post('/demo/load?reset=true', headers=bad_headers).status_code == 401
+        assert client.patch('/incidents/INC-NOPE/status', json={'status':'Investigating'}, headers=bad_headers).status_code == 401
+    assert client.post('/events', json=SAMPLE_EVENTS[0], headers=headers).status_code == 201
+    data = client.get('/incidents', headers=headers).json()
+    assert len(data) == 1
+    assert client.get('/incidents/' + data[0]['incident_id']).status_code == 401
+    assert client.post('/demo/load', headers=headers).status_code == 200
+    assert client.patch('/incidents/' + data[0]['incident_id'] + '/status',
+                        json={'status':'Investigating'}, headers=headers).status_code == 200
+
+
+def test_render_fails_closed_without_operator_key(monkeypatch):
+    monkeypatch.setenv('RENDER', 'true')
+    monkeypatch.delenv('CLOUD_SECURITY_API_KEY', raising=False)
+    assert client.get('/incidents').status_code == 503
+    assert client.post('/demo/load').status_code == 503
+    assert client.post('/events', json=SAMPLE_EVENTS[0]).status_code == 503
+    result = client.options('/events', headers={'Origin':'https://multicloudsecurity.netlify.app',
+        'Access-Control-Request-Method':'POST', 'Access-Control-Request-Headers':'X-API-Key'})
+    assert result.status_code == 200

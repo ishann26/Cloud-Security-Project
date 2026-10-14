@@ -2,7 +2,7 @@ import { STATUSES, fmt, sevColor, originLabel } from "../constants.js";
 import Playbook from "./Playbook.jsx";
 import History from "./History.jsx";
 
-export default function IncidentDetail({ incident: i, loading = true, error, busy, disabled = false, onAdvance }) {
+export default function IncidentDetail({ incident: i, loading = true, error, busy, disabled = false, readOnly = false, onAdvance }) {
   if (!i) {
     return (
       <div className="incident-detail panel p-5">
@@ -30,7 +30,7 @@ export default function IncidentDetail({ incident: i, loading = true, error, bus
       <p className="text-sm mt-1">{i.description}</p>
 
       <dl className="grid grid-cols-2 gap-x-4 gap-y-2 text-sm mt-4">
-        {facts.map(([label, value]) => (
+        {facts.filter(([label]) => !readOnly || !["Account", "Actor", "Source IP"].includes(label)).map(([label, value]) => (
           <div key={label} className="min-w-0"><dt className="text-xs mute">{label}</dt><dd className="break-words">{value}</dd></div>
         ))}
       </dl>
@@ -49,7 +49,7 @@ export default function IncidentDetail({ incident: i, loading = true, error, bus
           <span key={s} className={`text-sm px-2 py-1 rounded border line ${n <= k ? "font-semibold" : "mute"}`}
                 style={n === k ? { background: "var(--sel)" } : {}}>{n < k ? "✓ " : ""}{s}</span>
         ))}
-        {next && (
+        {next && !readOnly && (
           <button disabled={busy || disabled} onClick={() => onAdvance(next)} className="button primary ml-auto">{busy ? "Saving…" : `Mark as ${next}`}</button>
         )}
       </div>
@@ -58,8 +58,8 @@ export default function IncidentDetail({ incident: i, loading = true, error, bus
       <ul className="text-sm list-disc pl-5">{i.severity_reasons.map((r) => <li key={r}>{r}</li>)}</ul>
 
       <p className="mute text-sm mt-5">Playbook steps are manual guidance. Changing status does not execute AWS commands.</p>
-      <Playbook key={i.incident_id} steps={i.playbook} resource={i.resource_id} />
-      <History history={i.history} />
+      {!readOnly && <Playbook key={i.incident_id} steps={i.playbook} resource={i.resource_id} />}
+      {!readOnly && <History history={i.history} />}
     </div>
   );
 }

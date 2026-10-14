@@ -105,7 +105,7 @@ Optional flags: `--profile NAME`, `--account-id EXPECTED_ACCOUNT`, and `--event-
 
 Each run freezes a recent time window, retrieves at most 50 records per page, decodes each `CloudTrailEvent`, and forwards individual records to the existing API. Pagination uses service `NextToken` with CLI automatic pagination disabled. Requests are spaced below two per second with bounded retry/backoff; no automatic ongoing polling. Limits: 1–1440 minutes and 1–20 pages. Exit code 2 means errors or truncation; a truncated run is incomplete. Increase the page cap within its limit or narrow the window. AWS Event History delivery is delayed, so rerun the overlapping window after the action appears in AWS; backend event-ID deduplication handles replay across restarts.
 
-The JSON summary reports pages, fetched records, created incidents, duplicates, ignored records, failed records, and truncation. Invalid records are skipped and counted; persistent backend unavailability stops the batch. The backend URL must be a loopback HTTP origin. HTTP redirects and proxies are disabled for event posting.
+The JSON summary reports pages, fetched records, created incidents, duplicates, ignored records, failed records, and truncation. Invalid records are skipped and counted; persistent backend unavailability stops the batch. The backend URL must be a loopback HTTP origin or the explicitly approved Render HTTPS origin described below. HTTP redirects and proxies are disabled for event posting.
 
 [CloudTrail Event History](https://docs.aws.amazon.com/awscloudtrail/latest/userguide/view-cloudtrail-events.html) is regional management-event history, available for 90 days without a new trail or S3 bucket. It excludes S3 object data events. [AWS lookup documentation](https://docs.aws.amazon.com/cli/latest/reference/cloudtrail/lookup-events.html) describes its format and rate limit. For this milestone use EC2 management events in Mumbai; other services, including global IAM activity, may require a different lookup region.
 
@@ -116,7 +116,7 @@ The JSON summary reports pages, fetched records, created incidents, duplicates, 
 - The dashboard refreshes manually. Playbook checkboxes are browser-only progress.
 - SQLite persists incidents and duplicate tracking across restarts; keep the database on local disk.
 - `/demo/load?reset=true` remains an explicit destructive reset of the entire incident store. The dashboard uses non-destructive loading instead.
-- Do not expose this unauthenticated API publicly. No AWS resources or remediation should be created/executed without separate approval.
+- Do not expose the API publicly without configuring operator authentication as described below. No AWS resources or remediation should be created/executed without separate approval.
 
 
 ## Local persistence
@@ -139,3 +139,114 @@ The normalized event includes `origin`: `demo`, `aws-cloudtrail`, `fixture`, or 
 Origin is ingestion metadata, not cryptographic proof of authenticity: this local API is unauthenticated, and a caller can explicitly supply the supported query parameter. Verify real-event claims against AWS CloudTrail using the displayed event ID. The existing six sample incidents and the one AWS incident were labeled using their known event IDs; unknown records remain unverified. These labels persist in SQLite.
 
 The dashboard warns that imported records describe past actions, not necessarily current exposure. Playbooks and status changes remain manual. Present the AWS component as a tested one-cloud MVP with manual bounded collection, not a continuously streaming, deployed multi-cloud service.
+
+## Importing real events into the Render deployment
+
+Approved collector destination: `https://cloud-security-backend-y7ty.onrender.com`.
+The laptop runs the AWS CLI collector and sends records over HTTPS to Render.
+AWS credentials remain on the laptop. There is no automatic AWS polling on Render.
+
+### Deployment configuration, before importing
+
+1. Deploy the updated backend and frontend using your existing deployment process.
+   These local changes do not update either hosted site until deployed.
+2. Set a long random private `CLOUD_SECURITY_API_KEY` value in Render's environment
+   settings. Use an operator secret unrelated to your AWS credentials. Render
+   supplies `RENDER=true`; without the key, the API rejects incident reads and
+   all mutations with HTTP 503. With a key, requests need the matching `X-API-Key`
+   header. OpenAPI and docs contain API metadata, not incident records.
+3. Keep frontend `VITE_API_URL` set to the Render origin. Never put the key in
+   `VITE_*`, source code or Git. The dashboard asks for the operator key when it
+   receives HTTP 401 and retains it in memory until the page reloads. Operators
+   with this shared key can read data, change status and reset the store.
+4. Test the deployed authentication and a synthetic fixture first. This sends
+   simulated records, not real AWS evidence. Do not upload real data until reads
+   without the key are denied.
+
+From `backend/`, enter the same key privately in zsh:
+
+```zsh
+read -s 'CLOUD_SECURITY_API_KEY?Project operator key: '
+export CLOUD_SECURITY_API_KEY
+```
+
+Offline collector test against Render (no AWS access, but writes fixture incidents
+on the hosted backend):
+
+```bash
+.venv/bin/python -m app.aws_collector \
+  --fixture tests/fixtures/cloudtrail_lookup.json \
+  --backend-url https://cloud-security-backend-y7ty.onrender.com
+```
+
+### Authorized live retrieval, only after separate approval
+
+The historical test window includes the original test at 00:28 IST on October 7
+and the additional tests that morning. Explicit windows require timezone-aware
+ISO 8601 values, span at most 24 hours, and must be inside the past 90 days.
+The window below is historical test data, not evidence of a new attack.
+
+```bash
+.venv/bin/python -m app.aws_collector --live \
+  --region ap-south-1 --event-name AuthorizeSecurityGroupIngress \
+  --start-time 2026-10-06T18:30:00Z --end-time 2026-10-07T04:00:00Z \
+  --max-pages 2 \
+  --backend-url https://cloud-security-backend-y7ty.onrender.com
+```
+
+Use `--minutes 30` instead of explicit dates for recent events. Optional `--profile`
+and `--account-id` filters still work. Refresh in the dashboard reads stored
+incidents and never performs AWS lookup. Importing the same event again returns
+its existing incident while the database survives. An ignored event is not
+necessarily an error: HTTPS-only ingress does not match the SSH rule.
+
+Remote destinations are restricted to this exact HTTPS host on port 443. The
+collector requires the key before remote lookup, disables proxies and redirects,
+stops on HTTP 401/403, and allows time for a Render cold start. No packages or
+paid infrastructure are required by these code changes.
+
+Render free services use an ephemeral filesystem. A SQLite file there is not a
+permanent archive and may disappear after a restart or redeploy. Keep a private
+local export of the original CloudTrail LookupEvents response, which can later be
+replayed with `--fixture` (and will be labelled fixture). Only records actually
+retrieved by an authorized live lookup use the AWS origin label. Do not claim
+replayed synthetic fixtures are new AWS events. See
+[Render free-service limitations](https://render.com/docs/free).
+
+For local-only development, leaving `CLOUD_SECURITY_API_KEY` unset preserves the
+existing demo path. Set it whenever the app is exposed outside your machine.
+
+## Shared read-only dashboard
+
+Build the Netlify bundle with `VITE_SHARED_VIEW=true` and the Render origin in
+`VITE_API_URL`. This version reads `/public/incidents`, never requests an operator
+key, and hides all mutation controls. The API explicitly constructs a redacted
+projection. Actor names, account IDs, source IPs, original resource identifiers,
+free-text analyst notes, policy contents and response commands are excluded.
+Real AWS event IDs, timestamps, priorities and origin labels remain visible.
+The private incident endpoints and mutations still require the operator key.
+
+The published archive contains **four historical controlled AWS test incidents
+from October 7, 2026**, plus six labelled simulated incidents. These records came
+from the existing verified local review database. No new AWS operations were
+performed to publish them. The archive contains redacted fields only and is
+intentionally included in the deployed bundle and repository.
+
+`backend/app/shared_incidents.json` provides the review baseline when Render's
+SQLite store is empty after restart. Current AWS/demo incidents in the store
+merge into that public view with event-ID deduplication. Unverified submissions
+and fixtures are excluded. This archive is not a durable database for later
+imports: newly imported records must be deliberately added to a new reviewed,
+redacted archive to survive free-host restarts.
+
+`frontend/public/review-archive.json` holds the same redacted baseline. If Render
+cannot respond within 12 seconds, the shared dashboard uses this published
+archive and displays an explicit notice. Refresh updates saved results rather
+than collecting AWS events. The shared site does not imply continuous monitoring,
+confirmed compromise or current resource exposure. Historical test groups were
+unattached and subsequently deleted.
+
+Netlify's current Free plan includes credits, and a published production deploy
+uses 15 credits. Do not publish without approval when the user's instruction is
+to avoid credit consumption. Existing service URLs and Free instance plans should
+remain unchanged. No paid storage, auto-recharge or new resources are necessary.

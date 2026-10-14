@@ -1,0 +1,424 @@
+{
+  "description": "Historical controlled AWS tests from 7 October 2026 and six simulated demo incidents. Identifiers hidden. Not live monitoring.",
+  "incidents": [
+    {
+      "incident_id": "INC-5CEB8925",
+      "type": "public_s3_bucket",
+      "title": "Public S3 access: resource-4fca3ca6",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "Critical",
+      "severity_score": 100,
+      "severity_reasons": [
+        "Bucket is publicly accessible (+50)",
+        "Public WRITE access (+30)",
+        "Bucket name suggests sensitive data (+20)"
+      ],
+      "status": "Investigating",
+      "provider": "aws",
+      "resource_type": "s3_bucket",
+      "resource_id": "resource-4fca3ca6",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "evt-0002",
+        "origin": "demo",
+        "provider": "aws",
+        "source": "s3.amazonaws.com",
+        "event_name": "PutBucketAcl",
+        "event_time": "2026-09-22T10:00:00Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "s3_bucket",
+        "resource_id": "resource-4fca3ca6",
+        "details": {}
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-06T18:47:07.827685+00:00",
+      "updated_at": "2026-10-07T03:47:34.092245+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-49C72BAB",
+      "type": "open_ssh_security_group",
+      "title": "SSH open to the world: resource-1c2e8090",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "Critical",
+      "severity_score": 85,
+      "severity_reasons": [
+        "SSH reachable from the entire internet (+60)",
+        "All ports/protocols opened (+25)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "security_group",
+      "resource_id": "resource-1c2e8090",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "b5fea6f0-3339-471b-b93e-12b61bd724dc",
+        "origin": "aws-cloudtrail",
+        "provider": "aws",
+        "source": "ec2.amazonaws.com",
+        "event_name": "AuthorizeSecurityGroupIngress",
+        "event_time": "2026-10-07T03:11:07Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "security_group",
+        "resource_id": "resource-1c2e8090",
+        "details": {
+          "public_rules": [
+            {
+              "protocol": "tcp",
+              "from_port": 0,
+              "to_port": 65535,
+              "cidr": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-07T03:12:23.586308+00:00",
+      "updated_at": "2026-10-07T03:12:23.586314+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-910DAA46",
+      "type": "excessive_iam_permission",
+      "title": "Excessive IAM permissions: resource-85d96450",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "Critical",
+      "severity_score": 85,
+      "severity_reasons": [
+        "Full administrator access granted (+85)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "iam_principal",
+      "resource_id": "resource-85d96450",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "evt-0003",
+        "origin": "demo",
+        "provider": "aws",
+        "source": "iam.amazonaws.com",
+        "event_name": "AttachUserPolicy",
+        "event_time": "2026-09-23T10:00:00Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "iam_principal",
+        "resource_id": "resource-85d96450",
+        "details": {}
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-06T18:47:07.827720+00:00",
+      "updated_at": "2026-10-06T18:47:07.827721+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-EBC46850",
+      "type": "open_ssh_security_group",
+      "title": "SSH open to the world: resource-70d9eca0",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "Critical",
+      "severity_score": 80,
+      "severity_reasons": [
+        "SSH reachable from the entire internet (+60)",
+        "Production security group (+20)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "security_group",
+      "resource_id": "resource-70d9eca0",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "evt-0005",
+        "origin": "demo",
+        "provider": "aws",
+        "source": "ec2.amazonaws.com",
+        "event_name": "AuthorizeSecurityGroupIngress",
+        "event_time": "2026-09-25T10:00:00Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "security_group",
+        "resource_id": "resource-70d9eca0",
+        "details": {
+          "public_rules": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-06T18:47:07.827811+00:00",
+      "updated_at": "2026-10-06T18:47:07.827812+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-7747B599",
+      "type": "excessive_iam_permission",
+      "title": "Excessive IAM permissions: resource-26cf7754",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "High",
+      "severity_score": 65,
+      "severity_reasons": [
+        "Service-wide wildcard on all resources (+65)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "iam_principal",
+      "resource_id": "resource-26cf7754",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "evt-0004",
+        "origin": "demo",
+        "provider": "aws",
+        "source": "iam.amazonaws.com",
+        "event_name": "PutUserPolicy",
+        "event_time": "2026-09-24T10:00:00Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "iam_principal",
+        "resource_id": "resource-26cf7754",
+        "details": {}
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-06T18:47:07.827779+00:00",
+      "updated_at": "2026-10-06T18:47:07.827781+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-04566877",
+      "type": "open_ssh_security_group",
+      "title": "SSH open to the world: resource-68f855fd",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "High",
+      "severity_score": 60,
+      "severity_reasons": [
+        "SSH reachable from the entire internet (+60)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "security_group",
+      "resource_id": "resource-68f855fd",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "c421c237-ec1c-46c2-8236-65386675351f",
+        "origin": "aws-cloudtrail",
+        "provider": "aws",
+        "source": "ec2.amazonaws.com",
+        "event_name": "AuthorizeSecurityGroupIngress",
+        "event_time": "2026-10-07T03:11:02Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "security_group",
+        "resource_id": "resource-68f855fd",
+        "details": {
+          "public_rules": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr": "::/0"
+            }
+          ]
+        }
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-07T03:12:23.592701+00:00",
+      "updated_at": "2026-10-07T03:12:23.592707+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-E9204D4D",
+      "type": "open_ssh_security_group",
+      "title": "SSH open to the world: resource-77c72f08",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "High",
+      "severity_score": 60,
+      "severity_reasons": [
+        "SSH reachable from the entire internet (+60)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "security_group",
+      "resource_id": "resource-77c72f08",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "9159ce22-4bd6-4aba-86dd-9ced5839cb1e",
+        "origin": "aws-cloudtrail",
+        "provider": "aws",
+        "source": "ec2.amazonaws.com",
+        "event_name": "AuthorizeSecurityGroupIngress",
+        "event_time": "2026-10-07T03:10:58Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "security_group",
+        "resource_id": "resource-77c72f08",
+        "details": {
+          "public_rules": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-07T03:12:23.596175+00:00",
+      "updated_at": "2026-10-07T03:12:23.596181+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-85F364DC",
+      "type": "open_ssh_security_group",
+      "title": "SSH open to the world: resource-fd52c85a",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "High",
+      "severity_score": 60,
+      "severity_reasons": [
+        "SSH reachable from the entire internet (+60)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "security_group",
+      "resource_id": "resource-fd52c85a",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "79b30a53-5ba3-43b2-ab95-a074249bd2e7",
+        "origin": "aws-cloudtrail",
+        "provider": "aws",
+        "source": "ec2.amazonaws.com",
+        "event_name": "AuthorizeSecurityGroupIngress",
+        "event_time": "2026-10-06T18:58:37Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "security_group",
+        "resource_id": "resource-fd52c85a",
+        "details": {
+          "public_rules": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-06T19:00:51.935580+00:00",
+      "updated_at": "2026-10-06T19:00:51.935590+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-A990FA18",
+      "type": "public_s3_bucket",
+      "title": "Public S3 access: resource-16096982",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "Medium",
+      "severity_score": 50,
+      "severity_reasons": [
+        "Bucket is publicly accessible (+50)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "s3_bucket",
+      "resource_id": "resource-16096982",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "evt-0001",
+        "origin": "demo",
+        "provider": "aws",
+        "source": "s3.amazonaws.com",
+        "event_name": "PutBucketAcl",
+        "event_time": "2026-09-21T10:00:00Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "s3_bucket",
+        "resource_id": "resource-16096982",
+        "details": {}
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-06T18:47:07.827623+00:00",
+      "updated_at": "2026-10-06T18:47:07.827626+00:00",
+      "shared_read_only": true
+    },
+    {
+      "incident_id": "INC-08769B0D",
+      "type": "open_ssh_security_group",
+      "title": "SSH open to the world: resource-6440a1a3",
+      "description": "A historical configuration change matched the project detection rule. Identifying details are hidden.",
+      "severity": "Low",
+      "severity_score": 35,
+      "severity_reasons": [
+        "SSH reachable from the entire internet (+60)",
+        "Non-production security group (-25)"
+      ],
+      "status": "Detected",
+      "provider": "aws",
+      "resource_type": "security_group",
+      "resource_id": "resource-6440a1a3",
+      "actor": "Hidden",
+      "event": {
+        "event_id": "evt-0006",
+        "origin": "demo",
+        "provider": "aws",
+        "source": "ec2.amazonaws.com",
+        "event_name": "AuthorizeSecurityGroupIngress",
+        "event_time": "2026-09-26T10:00:00Z",
+        "region": "ap-south-1",
+        "account_id": "Hidden",
+        "actor": "Hidden",
+        "source_ip": null,
+        "resource_type": "security_group",
+        "resource_id": "resource-6440a1a3",
+        "details": {
+          "public_rules": [
+            {
+              "protocol": "tcp",
+              "from_port": 22,
+              "to_port": 22,
+              "cidr": "0.0.0.0/0"
+            }
+          ]
+        }
+      },
+      "playbook": [],
+      "history": [],
+      "created_at": "2026-10-06T18:47:07.827877+00:00",
+      "updated_at": "2026-10-06T18:47:07.827880+00:00",
+      "shared_read_only": true
+    }
+  ]
+}

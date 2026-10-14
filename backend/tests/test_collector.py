@@ -175,3 +175,76 @@ def test_collector_marks_its_ingestion_mode(monkeypatch, transport, mode, expect
     args = ["--fixture", str(FIXTURE)] if mode == "fixture" else ["--live"]
     assert collector.main(args) == 0
     assert transport.get("/incidents").json()[0]["event"]["origin"] == expected
+
+
+def test_exact_render_origin_only():
+    assert collector.local_endpoint(collector.RENDER_ORIGIN) == collector.RENDER_ORIGIN + '/events'
+    for base in (collector.RENDER_ORIGIN.replace('https:', 'http:'),
+                 collector.RENDER_ORIGIN + '.evil.com', collector.RENDER_ORIGIN + ':444',
+                 collector.RENDER_ORIGIN + '?key=secret', collector.RENDER_ORIGIN + '/events',
+                 collector.RENDER_ORIGIN.replace('https://', 'https://user:pass@')):
+        with pytest.raises(collector.CollectorError):
+            collector.local_endpoint(base)
+
+
+def test_missing_render_key_stops_before_lookup(monkeypatch):
+    monkeypatch.delenv('CLOUD_SECURITY_API_KEY', raising=False)
+    monkeypatch.setattr(collector, 'live_pages', lambda *a, **k: pytest.fail('AWS called'))
+    assert collector.main(['--live', '--backend-url', collector.RENDER_ORIGIN]) == 2
+
+
+def test_historical_window_and_pagination(monkeypatch):
+    from datetime import datetime, timedelta, timezone
+    end = datetime.now(timezone.utc) - timedelta(days=7)
+    start = end - timedelta(hours=4)
+    parsed = collector.explicit_window(start.isoformat(), end.isoformat())
+    calls = []
+    def lookup(params, *args):
+        calls.append(copy.deepcopy(params))
+        return {'Events': [], **({'NextToken': 'second'} if len(calls) == 1 else {})}
+    monkeypatch.setattr(collector, 'lookup_page', lookup)
+    list(collector.live_pages('ap-south-1', None, 'AuthorizeSecurityGroupIngress', 30, 2,
+                              start=parsed[0], end=parsed[1]))
+    assert len(calls) == 2
+    assert calls[0]['StartTime'] == calls[1]['StartTime'] == start.isoformat()
+    assert calls[0]['EndTime'] == calls[1]['EndTime'] == end.isoformat()
+    for bad_start, bad_end in [('2026-01-01', '2026-01-02'),
+                               (end.isoformat(), start.isoformat()),
+                               ((start-timedelta(days=3)).isoformat(), end.isoformat())]:
+        with pytest.raises(collector.CollectorError):
+            collector.explicit_window(bad_start, bad_end)
+
+
+@pytest.mark.parametrize('flags', [['--start-time', '2026-10-07T00:00:00Z'],
+                                  ['--start-time', 'bad', '--end-time', 'bad']])
+def test_bad_window_stops_before_aws(monkeypatch, flags):
+    monkeypatch.setattr(collector, 'live_pages', lambda *a, **k: pytest.fail('AWS called'))
+    assert collector.main(['--live', *flags]) == 2
+
+
+def test_render_key_header_and_no_redirects(monkeypatch):
+    import io
+    captured = []
+    def build(*handlers):
+        assert any(isinstance(h, collector.NoRedirects) for h in handlers)
+        class Opener:
+            def open(self, request, **kwargs):
+                captured.append(request)
+                return io.StringIO('{"detected":true,"duplicate":false}')
+        return Opener()
+    monkeypatch.setenv('CLOUD_SECURITY_API_KEY', 'test-only-key')
+    monkeypatch.setattr(collector, 'build_opener', build)
+    collector.post_event(collector.RENDER_ORIGIN + '/events', SAMPLE_EVENTS[0])
+    assert captured[0].get_header('X-api-key') == 'test-only-key'
+
+
+def test_auth_failure_stops_batch_without_retry(monkeypatch):
+    calls = []
+    class Opener:
+        def open(self, *a, **k):
+            calls.append(1)
+            raise HTTPError('backend', 401, 'Unauthorized', None, None)
+    monkeypatch.setattr(collector, 'build_opener', lambda *a: Opener())
+    with pytest.raises(collector.BackendUnavailable, match='authentication'):
+        collector.post_event(collector.RENDER_ORIGIN + '/events', SAMPLE_EVENTS[0])
+    assert len(calls) == 1

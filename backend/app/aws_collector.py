@@ -1,4 +1,4 @@
-"""Bounded CloudTrail lookup -> existing local POST /events. Standard library only."""
+"""Bounded CloudTrail lookup -> local or approved Render POST /events. Standard library only."""
 import argparse
 from dataclasses import asdict, dataclass
 from datetime import datetime, timedelta, timezone
@@ -39,16 +39,40 @@ class NoRedirects(HTTPRedirectHandler):
         return None
 
 
+RENDER_ORIGIN = "https://cloud-security-backend-y7ty.onrender.com"
+
+
 def local_endpoint(base):
-    url = urlsplit(base)
-    if (url.scheme != "http" or url.hostname not in {"localhost", "127.0.0.1", "::1"}
-            or url.username or url.password or url.query or url.fragment or url.path not in {"", "/"}):
-        raise CollectorError("Backend URL must be a loopback HTTP origin, e.g. http://127.0.0.1:8000")
+    """Accept loopback or the user's exact HTTPS deployment, never arbitrary hosts."""
     try:
-        url.port
+        url = urlsplit(base)
+        local = url.scheme == "http" and url.hostname in {"localhost", "127.0.0.1", "::1"}
+        remote = (url.scheme == "https" and url.hostname == urlsplit(RENDER_ORIGIN).hostname
+                  and url.port in {None, 443})
+        valid_port = url.port is None or 1 <= url.port <= 65535
     except ValueError:
-        raise CollectorError("Invalid backend port") from None
+        raise CollectorError("Invalid backend URL or port") from None
+    if (not (local or remote) or not valid_port or url.username or url.password
+            or url.query or url.fragment or url.path not in {"", "/"}):
+        raise CollectorError("Backend must be loopback HTTP or the approved Render HTTPS origin")
     return base.rstrip("/") + "/events"
+
+
+def explicit_window(start, end):
+    try:
+        start = datetime.fromisoformat(start.replace("Z", "+00:00"))
+        end = datetime.fromisoformat(end.replace("Z", "+00:00"))
+        if start.utcoffset() is None or end.utcoffset() is None:
+            raise ValueError()
+        start, end = start.astimezone(timezone.utc), end.astimezone(timezone.utc)
+        now = datetime.now(timezone.utc)
+        if not now - timedelta(days=90) <= start < end <= now:
+            raise ValueError()
+        if end - start > timedelta(days=1):
+            raise ValueError()
+    except (ValueError, TypeError):
+        raise CollectorError("Use timezone-aware start/end times in the past 90 days, at most 24 hours apart") from None
+    return start, end
 
 
 def lookup_page(params, region, profile=None):
@@ -89,9 +113,10 @@ def lookup_page(params, region, profile=None):
         raise CollectorError("AWS lookup failed; check the selected profile, region, and network")
 
 
-def live_pages(region, profile, event_name, minutes, max_pages):
-    end = datetime.now(timezone.utc)
-    params = {"StartTime": (end - timedelta(minutes=minutes)).isoformat(),
+def live_pages(region, profile, event_name, minutes, max_pages, start=None, end=None):
+    end = end or datetime.now(timezone.utc)
+    start = start or end - timedelta(minutes=minutes)
+    params = {"StartTime": start.isoformat(),
               "EndTime": end.isoformat(), "MaxResults": 50,
               "LookupAttributes": [{"AttributeKey": "EventName", "AttributeValue": event_name}]}
     tokens = set()
@@ -118,19 +143,23 @@ def fixture_pages(path):
 
 
 def post_event(endpoint, record):
-    # Disable proxies and redirects to keep CloudTrail records on the local machine.
+    # Disable proxies and redirects so records and the key stay at the selected origin.
     opener = build_opener(ProxyHandler({}), NoRedirects())
     request = Request(endpoint, data=json.dumps(record).encode(), method="POST",
-                      headers={"Content-Type": "application/json"})
+                      headers={"Content-Type": "application/json",
+                               **({"X-API-Key": os.environ["CLOUD_SECURITY_API_KEY"]}
+                                  if os.environ.get("CLOUD_SECURITY_API_KEY") else {})})
     for attempt in range(3):
         try:
-            with opener.open(request, timeout=10) as response:
+            with opener.open(request, timeout=60) as response:
                 body = json.load(response)
             if (not isinstance(body, dict) or type(body.get("detected")) is not bool
                     or type(body.get("duplicate", False)) is not bool):
                 raise CollectorError("Backend returned an invalid event result")
             return body
         except HTTPError as exc:
+            if exc.code in {401, 403}:
+                raise BackendUnavailable("Backend authentication rejected; check CLOUD_SECURITY_API_KEY") from None
             if exc.code == 429 or 500 <= exc.code < 600:
                 if attempt < 2:
                     time.sleep(2 ** attempt)
@@ -142,7 +171,7 @@ def post_event(endpoint, record):
             if attempt < 2:
                 time.sleep(2 ** attempt)
                 continue
-            raise BackendUnavailable("Local backend unreachable; start it and retry") from None
+            raise BackendUnavailable("Backend unreachable; check the URL or wait for Render to wake and retry") from None
         except ValueError:
             raise CollectorError("Backend returned malformed JSON") from None
 
@@ -215,15 +244,26 @@ def main(argv=None):
     parser.add_argument("--account-id", help="Optional expected recipient account; other accounts are skipped")
     parser.add_argument("--event-name", choices=sorted(WATCHED), default="AuthorizeSecurityGroupIngress")
     parser.add_argument("--minutes", type=bounded_int(1, 1440), default=30)
+    parser.add_argument("--start-time", help="ISO 8601 time with timezone, paired with --end-time")
+    parser.add_argument("--end-time", help="End of a historical window, at most 24 hours wide")
     parser.add_argument("--max-pages", type=bounded_int(1, 20), default=2)
     parser.add_argument("--backend-url", default="http://127.0.0.1:8000")
     args = parser.parse_args(argv)
     summary = Summary()
     try:
         endpoint = local_endpoint(args.backend_url)
+        if urlsplit(endpoint).scheme == "https":
+            if not os.environ.get("CLOUD_SECURITY_API_KEY"):
+                raise CollectorError("Set CLOUD_SECURITY_API_KEY before sending events to Render")
+        window = None
+        if args.start_time or args.end_time:
+            if not args.live or not (args.start_time and args.end_time):
+                raise CollectorError("Historical lookup requires --live and both --start-time and --end-time")
+            window = explicit_window(args.start_time, args.end_time)
         endpoint += "?origin=" + ("aws-cloudtrail" if args.live else "fixture")
         pages = (fixture_pages(args.fixture) if args.fixture else
-                 live_pages(args.region, args.profile, args.event_name, args.minutes, args.max_pages))
+                 live_pages(args.region, args.profile, args.event_name, args.minutes, args.max_pages,
+                            **(dict(start=window[0], end=window[1]) if window else {})))
         collect(pages, endpoint, summary, args.event_name, args.account_id, args.region)
     except CollectorError as exc:
         print(str(exc), file=sys.stderr)
